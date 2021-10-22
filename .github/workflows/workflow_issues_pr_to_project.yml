@@ -15,6 +15,16 @@ on:
       project:
         required: true
         type: number
+      login:
+        type: string
+        required: true
+      label:
+        type: string
+        required: false
+        default: "Customer issue"
+      repository:
+        type: string
+        required: true
     secrets:
       token:
         required: true
@@ -100,3 +110,51 @@ jobs:
                 }
               }
             }' -f project=$PROJECT_ID -f item=$ITEM_ID -f status_field=$STATUS_FIELD_ID -f status_value=${{ env.STATUS_OPTION_ID }} -f date_field=$DATE_FIELD_ID -f date_value=$DATE --silent
+      - name: Get user org data
+        env:
+          GITHUB_TOKEN: ${{ secrets.token }}
+          ORGANIZATION: ${{ inputs.org }}
+          LOGIN: ${{ inputs.login }}
+        run: |
+          gh api graphql -f query='
+            query($org:String!, $login:String!) { 
+              user(login:$login) { 
+                login
+                organization(login:$org) {
+                  login
+                }
+              }
+            }' -f org=$ORGANIZATION -f login=$LOGIN > user_org_data.json
+          echo 'ORG_USER='$(jq '.data.user.organization.id' user_org_data.json) >> $GITHUB_ENV
+      - name: Get repository data
+        env:
+          GITHUB_TOKEN: ${{ secrets.token }}
+          ORGANIZATION: ${{ inputs.org }}
+          REPOSITORY: ${{ inputs.repository }}
+          LABEL: ${{ inputs.label }}
+        run: |
+          gh api graphql -f query='
+            query($org:String!, $repository:String!, $label:String!) { 
+              repository(owner:$org, name:$repository) { 
+                label(name:$label) {
+                  id  
+                }
+              }
+            }' -f org=$ORGANIZATION -f repository=$REPOSITORY  -f label="${LABEL}" > project_data.json
+          echo 'LABEL_ID='$(jq '.data.repository.label.id' project_data.json) >> $GITHUB_ENV
+
+      - name: Add label to issue
+        if: ${{ env.ORG_USER }} != ${{ inputs.org }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.token }}
+        run: |
+          gh api graphql -f query='
+            mutation(
+              $label: ID!,
+              $item: ID!
+            ) {
+              addLabelsToLabelable(input: {
+                labelIds: $label,
+                labelableId: $item
+              }) { clientMutationId }
+            }' -f label=${{ env.LABEL_ID }} -f item=${{ inputs.node_id }} --silent
