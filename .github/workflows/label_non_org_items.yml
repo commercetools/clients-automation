@@ -39,7 +39,7 @@ jobs:
               user(login:$login) { 
                 login
                 organization(login:$org) {
-                  id
+                  login
                 }
               }
             }' -f org=$ORGANIZATION -f login=$LOGIN > user_org_data.json
