@@ -144,7 +144,7 @@ jobs:
           echo 'LABEL_ID='$(jq '.data.repository.label.id' project_data.json) >> $GITHUB_ENV
 
       - name: Add label to issue
-        if: ${{ env.ORG_USER }} != ${{ inputs.org }}
+        if: ${{ env.ORG_USER != inputs.org }}
         env:
           GITHUB_TOKEN: ${{ secrets.token }}
         run: |
