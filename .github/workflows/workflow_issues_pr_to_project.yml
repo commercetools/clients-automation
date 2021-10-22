@@ -125,7 +125,7 @@ jobs:
                 }
               }
             }' -f org=$ORGANIZATION -f login=$LOGIN > user_org_data.json
-          echo 'ORG_USER='$(jq '.data.user.organization.login' user_org_data.json) >> $GITHUB_ENV
+          echo 'ORG_USER='$(jq -r '.data.user.organization.login' user_org_data.json) >> $GITHUB_ENV
       - name: Get repository data
         env:
           GITHUB_TOKEN: ${{ secrets.token }}
