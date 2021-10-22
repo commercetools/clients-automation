@@ -146,6 +146,7 @@ jobs:
       - name: Add label to issue
         if: ${{ env.ORG_USER != inputs.org }}
         env:
+          ORGANIZATION: ${{ inputs.org }}
           GITHUB_TOKEN: ${{ secrets.token }}
         run: |
           gh api graphql -f query='
