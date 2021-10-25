@@ -22,6 +22,10 @@ on:
         type: string
         required: false
         default: "Customer issue"
+      label_status:
+        type: string
+        required: false
+        default: "Todo"
       repository:
         type: string
         required: true
@@ -38,6 +42,7 @@ jobs:
           ORGANIZATION: ${{ inputs.org }}
           PROJECT_NUMBER: ${{ inputs.project }}
           STATUS: ${{ inputs.status }}
+          LABEL_STATUS: ${{ inputs.label_status }}
         run: |
           gh api graphql --header 'GraphQL-Features: projects_next_graphql' -f query='
             query($org: String!, $number: Int!) {
@@ -58,6 +63,7 @@ jobs:
           echo 'DATE_FIELD_ID='$(jq '.data.organization.projectNext.fields.nodes[] | select(.name== "Date posted") | .id' project_data.json) >> $GITHUB_ENV
           echo 'STATUS_FIELD_ID='$(jq '.data.organization.projectNext.fields.nodes[] | select(.name== "Status") | .id' project_data.json) >> $GITHUB_ENV
           echo 'STATUS_OPTION_ID='$(jq --arg STATUS "$STATUS" '.data.organization.projectNext.fields.nodes[] | select(.name== "Status") |.settings | fromjson.options[] | select(.name==$STATUS) |.id' project_data.json) >> $GITHUB_ENV
+          echo 'LABEL_STATUS_OPTION_ID='$(jq --arg STATUS "$LABEL_STATUS" '.data.organization.projectNext.fields.nodes[] | select(.name== "Status") |.settings | fromjson.options[] | select(.name==$LABEL_STATUS) |.id' project_data.json) >> $GITHUB_ENV
       - name: Add Issue/PR to project
         env:
           GITHUB_TOKEN: ${{secrets.token}}
@@ -159,3 +165,22 @@ jobs:
                 labelableId: $item
               }) { clientMutationId }
             }' -f label=${{ env.LABEL_ID }} -f item=${{ inputs.node_id }} --silent
+          gh api graphql --header 'GraphQL-Features: projects_next_graphql' -f query='
+            mutation (
+              $project: ID!
+              $item: ID!
+              $status_field: ID!
+              $status_value: String!
+            ) {
+              set_status: updateProjectNextItemField(input: {
+                projectId: $project
+                itemId: $item
+                fieldId: $status_field
+                value: $status_value
+              }) {
+                projectNextItem {
+                  id
+                  }
+              }
+            }' -f project=$PROJECT_ID -f item=$ITEM_ID -f status_field=$STATUS_FIELD_ID -f status_value=${{ env.LABEL_STATUS_OPTION_ID }} --silent
+            
