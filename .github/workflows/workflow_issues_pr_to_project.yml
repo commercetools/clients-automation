@@ -63,7 +63,7 @@ jobs:
           echo 'DATE_FIELD_ID='$(jq '.data.organization.projectNext.fields.nodes[] | select(.name== "Date posted") | .id' project_data.json) >> $GITHUB_ENV
           echo 'STATUS_FIELD_ID='$(jq '.data.organization.projectNext.fields.nodes[] | select(.name== "Status") | .id' project_data.json) >> $GITHUB_ENV
           echo 'STATUS_OPTION_ID='$(jq --arg STATUS "$STATUS" '.data.organization.projectNext.fields.nodes[] | select(.name== "Status") |.settings | fromjson.options[] | select(.name==$STATUS) |.id' project_data.json) >> $GITHUB_ENV
-          echo 'LABEL_STATUS_OPTION_ID='$(jq --arg STATUS "$LABEL_STATUS" '.data.organization.projectNext.fields.nodes[] | select(.name== "Status") |.settings | fromjson.options[] | select(.name==$LABEL_STATUS) |.id' project_data.json) >> $GITHUB_ENV
+          echo 'LABEL_STATUS_OPTION_ID='$(jq --arg LABEL_STATUS "$LABEL_STATUS" '.data.organization.projectNext.fields.nodes[] | select(.name== "Status") |.settings | fromjson.options[] | select(.name==$LABEL_STATUS) |.id' project_data.json) >> $GITHUB_ENV
       - name: Add Issue/PR to project
         env:
           GITHUB_TOKEN: ${{secrets.token}}
