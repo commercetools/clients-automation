@@ -1,0 +1,41 @@
+name: Calculate RAML diff for SDKs
+
+on:
+  workflow_call:
+    inputs:
+      api_ref:
+        type: string
+        required: true
+      api_ref_prev:
+        type: string
+        required: true
+      sdk:
+        type: string
+        required: true
+jobs:
+  diff:
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Store api reference version"
+        run: |
+          if [ ! -f reference.txt ]; then
+            git log --format='%H' --no-merges -n 1 --skip 1 > ../${{ inputs.sdk }}/reference.txt
+          fi
+          echo "previous=$(cat ../${{ inputs.sdk }}/reference.txt)" >> $GITHUB_ENV
+        working-directory: ${{ inputs.api_ref_prev }}
+
+      - name: "Switch to previous commit"
+        run: git checkout ${{ env.previous }}
+        working-directory: ${{ inputs.api_ref_prev }}
+
+      - name: "Calculate diff (API)"
+        run: rmf-codegen diff -f MARKDOWN -o ./${{ inputs.sdk }}/changes-api.md ${{ inputs.api_ref_prev }}/api-specs/api/api.raml ${{ inputs.api_ref }}/api-specs/api/api.raml
+
+      - name: "Calculate diff (Import API)"
+        run: rmf-codegen diff -f MARKDOWN -o ./${{ inputs.sdk }}/changes-import.md ${{ inputs.api_ref_prev }}/api-specs/import/api.raml ${{ inputs.api_ref }}/api-specs/import/api.raml
+
+      - name: "Calculate diff (History)"
+        run: rmf-codegen diff -f MARKDOWN -o ./${{ inputs.sdk }}/changes-history.md ${{ inputs.api_ref_prev }}/api-specs/history/api.raml ${{ inputs.api_ref }}/api-specs/history/api.raml
+
+      - name: "Calculate diff (ML)"
+        run: rmf-codegen diff -f MARKDOWN -o ./${{ inputs.sdk }}/changes-ml.md ${{ inputs.api_ref_prev }}/api-specs/ml/api.raml ${{ inputs.api_ref }}/api-specs/ml/api.raml
